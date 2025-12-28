@@ -13,3 +13,6 @@ onnxruntime
 Pillow
 psutil
 ninja
+matplotlib
+jupyter
+ipywidgets

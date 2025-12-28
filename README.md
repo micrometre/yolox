@@ -53,6 +53,22 @@ This will:
 - Save frames with detections to `output_frames/`
 - Create an annotated output video (with `--save-video`)
 
+### Interactive Jupyter Notebook
+
+For an interactive experience, use the Jupyter notebook:
+
+```bash
+source .venv/bin/activate
+jupyter notebook yolox_demo.ipynb
+```
+
+The notebook includes:
+- Step-by-step walkthrough of YOLOX inference
+- Interactive visualization with matplotlib
+- Reusable detection functions
+- Threshold experimentation
+- Easy testing with your own images
+
 ### Command-line options for `demo_image.py`
 
 - `--image`: Path to input image (required)
