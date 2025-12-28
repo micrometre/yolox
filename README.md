@@ -42,7 +42,18 @@ wget -P models https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0
 python demo_image.py --image test_images/street_scene.png --output result.jpg
 ```
 
-### Command-line options
+### Run inference on a video
+
+```bash
+python process_video.py your_video.mp4 --output-dir output_frames --save-video
+```
+
+This will:
+- Process the video and detect objects in each frame
+- Save frames with detections to `output_frames/`
+- Create an annotated output video (with `--save-video`)
+
+### Command-line options for `demo_image.py`
 
 - `--image`: Path to input image (required)
 - `--model`: Path to model weights (default: `models/yolox_s.pth`)
@@ -61,6 +72,45 @@ python demo_image.py \
     --conf 0.3 \
     --nms 0.5 \
     --device cpu
+```
+
+### Video processing options
+
+- `video`: Path to input video file (required)
+- `-o, --output-dir`: Directory to save detected frames (default: `images`)
+- `-s, --frame-skip`: Process every Nth frame (default: 1)
+- `-t, --threshold`: Detection confidence threshold (default: 0.6)
+- `-d, --device`: Device - `cpu` or `cuda` (default: `cpu`)
+- `--save-video`: Save output as annotated video file
+- `--model`: Path to model weights (default: `models/yolox_s.pth`)
+- `--size`: Input size (default: 640)
+- `--nms`: NMS threshold (default: 0.45)
+- `--vehicles-only`: Only save frames with vehicles detected
+
+### Video processing examples
+
+**Process every 5th frame and save as video:**
+```bash
+python process_video.py video.mp4 \
+    --frame-skip 5 \
+    --output-dir detections \
+    --save-video
+```
+
+**Detect only vehicles with high confidence:**
+```bash
+python process_video.py traffic.mp4 \
+    --threshold 0.7 \
+    --vehicles-only \
+    --output-dir vehicles
+```
+
+**Fast processing with GPU:**
+```bash
+python process_video.py video.mp4 \
+    --device cuda \
+    --frame-skip 3 \
+    --save-video
 ```
 
 ## Model Information
