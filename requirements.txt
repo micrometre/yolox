@@ -1,0 +1,15 @@
+# YOLOX Requirements
+torch>=1.7
+torchvision
+opencv-python
+numpy
+loguru
+tqdm
+thop
+tabulate
+pycocotools>=2.0.2
+onnx>=1.13.0
+onnxruntime
+Pillow
+psutil
+ninja
