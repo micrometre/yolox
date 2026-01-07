@@ -12,9 +12,16 @@ import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 import time
+import torch
+
+# Add YOLOX to path
+sys.path.insert(0, str(Path(__file__).parent.parent / "YOLOX"))
 
 # OpenVINO Runtime API
 from openvino import Core
+
+# Import YOLOX's official postprocess function
+from yolox.utils import postprocess as yolox_postprocess
 
 # COCO class names
 COCO_CLASSES = (
@@ -85,55 +92,40 @@ def nms(boxes, scores, nms_thresh):
     return keep
 
 
-def postprocess(outputs, conf_thresh, nms_thresh, ratio):
-    """Postprocess YOLOX output."""
-    predictions = outputs[0]  # [num_anchors, 85]
+def postprocess(outputs, conf_thresh, nms_thresh, ratio, num_classes=80):
+    """Postprocess YOLOX output using official YOLOX postprocessing.
     
-    # Convert center format to corner format
-    box_corner = np.zeros_like(predictions[:, :4])
-    box_corner[:, 0] = predictions[:, 0] - predictions[:, 2] / 2  # x1
-    box_corner[:, 1] = predictions[:, 1] - predictions[:, 3] / 2  # y1
-    box_corner[:, 2] = predictions[:, 0] + predictions[:, 2] / 2  # x2
-    box_corner[:, 3] = predictions[:, 1] + predictions[:, 3] / 2  # y2
-    predictions[:, :4] = box_corner
+    Args:
+        outputs: Raw model output (numpy array)
+        conf_thresh: Confidence threshold
+        nms_thresh: NMS threshold  
+        ratio: Scale ratio from preprocessing
+        num_classes: Number of classes (80 for COCO)
+    """
+    # Convert numpy to torch
+    if isinstance(outputs, np.ndarray):
+        outputs = torch.from_numpy(outputs)
     
-    # Get objectness and class scores
-    obj_conf = predictions[:, 4]
-    class_conf = predictions[:, 5:]
-    class_pred = np.argmax(class_conf, axis=1)
-    class_score = class_conf[np.arange(len(class_pred)), class_pred]
+    # Use YOLOX's official postprocess function
+    results = yolox_postprocess(
+        outputs, 
+        num_classes=num_classes,
+        conf_thre=conf_thresh,
+        nms_thre=nms_thresh
+    )
     
-    # Combined score
-    scores = obj_conf * class_score
-    
-    # Filter by confidence
-    mask = scores > conf_thresh
-    boxes = predictions[mask, :4]
-    scores = scores[mask]
-    class_ids = class_pred[mask]
-    
-    if len(boxes) == 0:
+    if results[0] is None:
         return None, None, None
     
-    # Scale boxes back to original image size
-    boxes = boxes / ratio
+    # Extract results
+    result = results[0].cpu().numpy()
+    # YOLOX postprocess returns boxes in 640x640 input image space
+    # We need to scale them back to original image size
+    bboxes = result[:, 0:4] / ratio  # Scale back to original image size
+    scores = result[:, 4] * result[:, 5]  # obj_conf * cls_conf
+    class_ids = result[:, 6]
     
-    # Apply NMS per class
-    final_boxes = []
-    final_scores = []
-    final_class_ids = []
-    
-    for cls_id in np.unique(class_ids):
-        cls_mask = class_ids == cls_id
-        cls_boxes = boxes[cls_mask]
-        cls_scores = scores[cls_mask]
-        
-        keep = nms(cls_boxes, cls_scores, nms_thresh)
-        final_boxes.extend(cls_boxes[keep])
-        final_scores.extend(cls_scores[keep])
-        final_class_ids.extend([cls_id] * len(keep))
-    
-    return np.array(final_boxes), np.array(final_scores), np.array(final_class_ids)
+    return bboxes, scores, class_ids
 
 
 def draw_detections(img, boxes, scores, class_ids, threshold=0.5):
@@ -159,7 +151,7 @@ def draw_detections(img, boxes, scores, class_ids, threshold=0.5):
 
 def process_video(
     video_path,
-    output_dir="images",
+    output_dir="outputs",
     frame_skip=1,
     threshold=0.6,
     model_path="models/yolox_s.onnx",
@@ -211,8 +203,8 @@ def process_video(
     
     input_layer = compiled_model.input(0)
     output_layer = compiled_model.output(0)
-    print(f"Input shape: {input_layer.shape}")
-    print(f"Output shape: {output_layer.shape}")
+    print(f"Input shape: {input_layer.partial_shape}")
+    print(f"Output shape: {output_layer.partial_shape}")
     print("Model loaded successfully!")
     
     # Open video
@@ -268,9 +260,9 @@ def process_video(
             inference_time = (time.time() - start_time) * 1000
             inference_times.append(inference_time)
             
-            # Postprocess
+            # Postprocess using YOLOX's official postprocess
             boxes, scores, class_ids = postprocess(
-                outputs, threshold, nms_threshold, ratio
+                outputs, threshold, nms_threshold, ratio, num_classes=80
             )
             
             # Process detections
@@ -288,9 +280,9 @@ def process_video(
                         if class_name in VEHICLE_CLASSES:
                             has_vehicles = True
                 
-                # Draw detections
-                if has_detections:
-                    frame = draw_detections(frame, boxes, scores, class_ids, threshold)
+                # Draw detections on all frames with detections
+                frame = draw_detections(frame, boxes, scores, class_ids, threshold)
+
             
             # Save frame if it has detections (or vehicles if filtering)
             should_save = has_detections and (not filter_vehicles_only or has_vehicles)
@@ -347,7 +339,7 @@ def main():
     parser.add_argument(
         "-o", "--output-dir",
         type=str,
-        default="images",
+        default="outputs",
         help="Directory to save detected frames"
     )
     

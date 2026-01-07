@@ -194,8 +194,8 @@ def main():
     # Get input/output info
     input_layer = compiled_model.input(0)
     output_layer = compiled_model.output(0)
-    print(f"Input shape: {input_layer.shape}")
-    print(f"Output shape: {output_layer.shape}")
+    print(f"Input shape: {input_layer.partial_shape}")
+    print(f"Output shape: {output_layer.partial_shape}")
 
     # Load and preprocess image
     print(f"Loading image: {args.image}")

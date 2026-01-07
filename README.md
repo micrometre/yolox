@@ -38,7 +38,8 @@ wget -P models https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0
 **ONNX Model (for OpenVINO):**
 ```bash
 # Export from PyTorch (requires model above)
-python -m yolox.tools.export_onnx --output-name models/yolox_s.onnx -n yolox-s -c models/yolox_s.pth
+python tools/export_onnx.py -c models/yolox_s.pth
+
 ```
 
 ## Usage
@@ -48,10 +49,10 @@ python -m yolox.tools.export_onnx --output-name models/yolox_s.onnx -n yolox-s -
 **Image Detection:**
 ```bash
 # Basic usage
-python demo_image.py --image test_images/street_scene.png --output result.jpg
+python tools/demo_image.py --image test_images/street_scene.png --output result.jpg
 
 # With custom parameters
-python demo_image.py \
+python tools/demo_image.py \
     --image test_images/street_scene.png \
     --output detections.jpg \
     --conf 0.3 \
@@ -62,10 +63,10 @@ python demo_image.py \
 **Video Processing:**
 ```bash
 # Process all frames
-python tools/demo_video.py video.mp4 --output-dir output_frames --save-video
+python tools/demo_video.py test_videos/car_park.mp4 --output-dir output_frames --save-video
 
 # Process every 5th frame
-python tools/demo_video.py video.mp4 --frame-skip 5 --output-dir detections
+python tools/demo_video.py test_videos/car_park.mp4 --frame-skip 5 --output-dir detections
 
 # Detect only vehicles with high confidence
 python tools/demo_video.py traffic.mp4 \
@@ -74,7 +75,7 @@ python tools/demo_video.py traffic.mp4 \
     --output-dir vehicles
 
 # GPU acceleration
-python tools/demo_video.py video.mp4 --device cuda --save-video
+python tools/demo_video.py test_videos/car_park.mp4 --device cuda --save-video
 ```
 
 ### OpenVINO Inference (Intel Acceleration)

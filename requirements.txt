@@ -16,3 +16,6 @@ ninja
 matplotlib
 jupyter
 ipywidgets
+onnxscript
+onnxsim
+openvino

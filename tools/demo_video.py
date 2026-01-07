@@ -80,7 +80,7 @@ def draw_detections(img, bboxes, scores, cls_ids, threshold=0.5):
 
 def process_video(
     video_path,
-    output_dir="images",
+    output_dir="outputs",
     frame_skip=1,
     threshold=0.6,
     model_path="models/yolox_s.pth",
@@ -262,7 +262,7 @@ def main():
     parser.add_argument(
         "-o", "--output-dir",
         type=str,
-        default="images",
+        default="outputs",
         help="Directory to save detected frames"
     )
     
